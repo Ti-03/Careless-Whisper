@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Careless-Whisper - RTT Surveillance</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', 'Consolas', monospace;
+            background: #0a0e27;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.03) 0%, transparent 50%);
+            color: #00ff00;
+            min-height: 100vh;
+            padding: 10px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.03) 0px,
+                transparent 1px,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 3px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #00ff00;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+            letter-spacing: 2px;
+            animation: glitch 3s infinite;
+        }
+        @media (min-width: 768px) {
+            .header h1 { font-size: 2.5em; letter-spacing: 3px; }
+        }
+        @keyframes glitch {
+            0%, 100% { text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+            50% { text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        }
+        .header p {
+            font-size: 0.75em;
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+        }
+        @media (min-width: 768px) {
+            .header p { font-size: 1em; }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+        }
+        .card {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 0;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            border: 1px solid #00ff00;
+            position: relative;
+        }
+        @media (min-width: 768px) {
+            .card { padding: 20px; }
+        }
+        .card::before {
+            content: '[';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #00ff00;
+            font-size: 1.2em;
+        }
+        .card::after {
+            content: ']';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #00ff00;
+            font-size: 1.2em;
+        }
+        .card h2 {
+            font-size: 0.95em;
+            margin-bottom: 12px;
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        @media (min-width: 768px) {
+            .card h2 { font-size: 1.2em; margin-bottom: 15px; letter-spacing: 2px; }
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 0;
+            font-size: 0.85em;
+            font-weight: bold;
+            border: 1px solid;
+            text-transform: uppercase;
+        }
+        .status-connected { 
+            background: rgba(0, 255, 0, 0.2); 
+            color: #00ff00;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        .status-disconnected { 
+            background: rgba(255, 0, 0, 0.2); 
+            color: #ff0000;
+            border-color: #ff0000;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        .qr-container {
+            text-align: center;
+            padding: 20px;
+        }
+        #qrcode {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #00ff00;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            border-radius: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: #00ff00;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+            box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.2);
+        }
+        .form-group input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5), inset 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        .form-group input::placeholder {
+            color: rgba(0, 255, 0, 0.3);
+        }
+        .btn {
+            padding: 14px 20px;
+            border: 2px solid;
+            border-radius: 0;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+            border-color: #00ff00;
+        }
+        .btn-primary:hover { 
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        .btn-danger {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff0000;
+            border-color: #ff0000;
+        }
+        .btn-danger:hover { 
+            background: rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .stat-box {
+            background: rgba(0, 255, 0, 0.05);
+            padding: 10px;
+            border-radius: 0;
+            text-align: center;
+            border: 1px solid #00ff00;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        .stat-label {
+            font-size: 0.7em;
+            color: #00ff00;
+            text-transform: uppercase;
+        }
+        .log-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 0;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7em;
+            border: 1px solid #00ff00;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+        }
+        .log-time {
+            color: #00ffff;
+            margin-right: 10px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 10px;
+        }
+        .device-info {
+            background: rgba(0, 255, 0, 0.05);
+            padding: 10px;
+            border-radius: 0;
+            margin-bottom: 10px;
+            border: 1px solid #00ff00;
+        }
+        .device-info p {
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            color: #00ff00;
+            font-size: 0.85em;
+        }
+        .device-info strong {
+            color: #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>[ Careless-Whisper ]</h1>
+            <p>&gt; NEVER LOOK BACK &lt;</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>📱 [CONN_STATUS]</h2>
+                <div id="connection-status">
+                    <p>Status: <span class="status-badge status-disconnected" id="conn-badge">Disconnected</span></p>
+                    <div class="qr-container" id="qr-container" style="display:none;">
+                        <p style="color:#00ffff;">SCAN TO AUTHENTICATE:</p>
+                        <canvas id="qrcode"></canvas>
+                    </div>
+                    <div id="user-info" style="display:none;">
+                        <div class="device-info">
+                            <p><strong>Phone:</strong> <span id="user-phone">-</span></p>
+                            <p><strong>Name:</strong> <span id="user-name">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚙️ ATTACK CONFIG</h2>
+                <div class="form-group">
+                    <label>TARGET JID</label>
+                    <input type="tel" id="target-number" placeholder="962XXXXXXXXX" />
+                </div>
+                <div class="form-group">
+                    <label>DURATION (minutes)</label>
+                    <input type="number" id="duration" value="10" min="1" max="120" />
+                </div>
+                <div class="form-group">
+                    <label>Probe Interval (seconds)</label>
+                    <input type="number" id="interval" value="15" min="0.5" max="60" step="0.5" />
+                    <p style="font-size:0.8em;opacity:0.7;margin-top:5px;">⚠️ Warning: &lt;5s = High ban risk!</p>
+                </div>
+                <button class="btn btn-primary" id="start-btn" disabled>[ INITIATE ATTACK ]</button>
+                <button class="btn btn-danger" id="stop-btn" disabled style="margin-top:10px;">[ TERMINATE ]</button>
+                <button class="btn" id="clear-btn" style="margin-top:10px;background:rgba(255,255,0,0.1);color:#ffff00;border-color:#ffff00;">[ CLEAR DATA ]</button>
+            </div>
+
+
+
+
+
+            <div class="card">
+                <h2>📝 [SYSTEM_LOG]</h2>
+                <div class="log-container" id="log-container">
+                    <div class="log-entry">
+                        <span class="log-time">--:--:--</span>
+                        <span>Waiting to start...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📈 [RTT_TIMELINE]</h2>
+            <div class="chart-container">
+                <canvas id="rtt-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let rttChart;
+
+        const ctx = document.getElementById('rtt-chart').getContext('2d');
+        rttChart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'APP_FOREGROUND',
+                    data: [],
+                    backgroundColor: '#00ff00',
+                    borderColor: '#00ff00',
+                    pointRadius: 6
+                }, {
+                    label: 'SCREEN_ON',
+                    data: [],
+                    backgroundColor: '#ffff00',
+                    borderColor: '#ffff00',
+                    pointRadius: 6
+                }, {
+                    label: 'SCREEN_OFF',
+                    data: [],
+                    backgroundColor: '#ff0000',
+                    borderColor: '#ff0000',
+                    pointRadius: 6
+                }, {
+                    label: 'OFFLINE',
+                    data: [],
+                    backgroundColor: '#666666',
+                    borderColor: '#666666',
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'RTT (ms)', color: '#00ff00' },
+                        ticks: { color: '#00ff00' },
+                        grid: { color: 'rgba(0, 255, 0, 0.2)' }
+                    },
+                    x: { 
+                        type: 'linear',
+                        title: { display: true, text: 'Probe #', color: '#00ff00' },
+                        ticks: { color: '#00ff00' },
+                        grid: { color: 'rgba(0, 255, 0, 0.2)' }
+                    }
+                },
+                plugins: {
+                    legend: { 
+                        labels: { color: '#00ff00', font: { family: 'Courier New', size: 12 } } 
+                    }
+                }
+            }
+        });
+
+        socket.on('qr', (qrData) => {
+            document.getElementById('qr-container').style.display = 'block';
+            document.getElementById('user-info').style.display = 'none';
+            const canvas = document.getElementById('qrcode');
+            QRCode.toCanvas(canvas, qrData, { width: 256 });
+        });
+
+        socket.on('connected', (user) => {
+            document.getElementById('conn-badge').textContent = 'Connected';
+            document.getElementById('conn-badge').className = 'status-badge status-connected';
+            document.getElementById('qr-container').style.display = 'none';
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('user-phone').textContent = user.id;
+            document.getElementById('user-name').textContent = user.name || 'N/A';
+            document.getElementById('start-btn').disabled = false;
+            addLog('WhatsApp connected successfully');
+        });
+
+        socket.on('disconnected', () => {
+            document.getElementById('conn-badge').textContent = 'Disconnected';
+            document.getElementById('conn-badge').className = 'status-badge status-disconnected';
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('stop-btn').disabled = true;
+            addLog('WhatsApp disconnected');
+        });
+
+        socket.on('measurement', (data) => {
+            updateChart(data);
+            addLog(`RTT: ${data.rtt_ms}ms | Status: ${data.status}`);
+            socket.emit('get-stats');
+        });
+
+        socket.on('stats', (stats) => {
+            // Stats event handler (UI removed)
+        });
+
+        socket.on('device-profile', (profile) => {
+            // Device profile event handler (UI removed)
+        });
+
+        socket.on('log', (message) => {
+            addLog(message);
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            const config = {
+                targetNumber: document.getElementById('target-number').value,
+                deviceModel: 'Unknown',
+                duration: parseInt(document.getElementById('duration').value),
+                interval: parseFloat(document.getElementById('interval').value)
+            };
+            socket.emit('start-monitoring', config);
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('stop-btn').disabled = false;
+            addLog(`Starting attack on: ${config.targetNumber}`);
+        });
+
+        document.getElementById('stop-btn').addEventListener('click', () => {
+            socket.emit('stop-monitoring');
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            if (confirm('Clear all results?')) {
+                socket.emit('clear-results');
+                rttChart.data.datasets.forEach(d => d.data = []);
+                rttChart.update();
+                addLog('Results cleared');
+            }
+        });
+
+        function updateChart(data) {
+            const probeNum = rttChart.data.datasets.reduce((sum, d) => sum + d.data.length, 0) + 1;
+            const point = { x: probeNum, y: data.rtt_ms || 10000 };
+            
+            const idx = 
+                data.status === 'APP_FOREGROUND' ? 0 :
+                data.status === 'SCREEN_ON' ? 1 :
+                data.status === 'SCREEN_OFF' ? 2 : 3;
+            
+            rttChart.data.datasets[idx].data.push(point);
+            if (rttChart.data.datasets[idx].data.length > 50) {
+                rttChart.data.datasets[idx].data.shift();
+            }
+            rttChart.update();
+        }
+
+        function addLog(message) {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">${time}</span><span>${message}</span>`;
+            container.insertBefore(entry, container.firstChild);
+            
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        socket.emit('get-status');
+    </script>
+</body>
+</html>
