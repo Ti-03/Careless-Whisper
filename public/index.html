@@ -64,8 +64,8 @@
                     <h2>⚙️ Configuration</h2>
                     <div class="form-group">
                         <label>Target Phone Number</label>
-                        <input type="tel" id="target-number" placeholder="962XXXXXXXXX" />
-                        <div class="form-help">Enter in international format without + or 00</div>
+                        <input type="tel" id="target-number" placeholder="+962 XX XXX XXXX or 962XXXXXXXXX" />
+                        <div class="form-help">Enter in any format - will be auto-cleaned</div>
                     </div>
                     <div class="form-group">
                         <label>Duration (minutes)</label>
@@ -323,9 +323,34 @@
             addLog(message);
         });
 
+        // Phone number input filter
+        const targetNumberInput = document.getElementById('target-number');
+        targetNumberInput.addEventListener('input', (e) => {
+            // Auto-format while typing (visual feedback only)
+            const cursorPos = e.target.selectionStart;
+            const oldValue = e.target.value;
+            const cleaned = oldValue.replace(/[^0-9+]/g, '');
+            
+            if (cleaned !== oldValue) {
+                e.target.value = cleaned;
+                // Adjust cursor position
+                const diff = oldValue.length - cleaned.length;
+                e.target.setSelectionRange(cursorPos - diff, cursorPos - diff);
+            }
+        });
+
         document.getElementById('start-btn').addEventListener('click', () => {
+            // Clean the phone number: remove +, spaces, dashes, parentheses, dots
+            let rawNumber = document.getElementById('target-number').value;
+            let cleanedNumber = rawNumber.replace(/[^0-9]/g, '');
+            
+            // Remove leading 00 if present
+            if (cleanedNumber.startsWith('00')) {
+                cleanedNumber = cleanedNumber.substring(2);
+            }
+            
             const config = {
-                targetNumber: document.getElementById('target-number').value,
+                targetNumber: cleanedNumber,
                 deviceModel: 'Unknown',
                 duration: parseInt(document.getElementById('duration').value),
                 interval: parseFloat(document.getElementById('interval').value)
@@ -333,7 +358,7 @@
             socket.emit('start-monitoring', config);
             document.getElementById('start-btn').disabled = true;
             document.getElementById('stop-btn').disabled = false;
-            addLog(`Starting attack on: ${config.targetNumber}`);
+            addLog(`Starting attack on: ${cleanedNumber}`);
         });
 
         document.getElementById('stop-btn').addEventListener('click', () => {
