@@ -19,9 +19,7 @@
         <!-- Tab Navigation -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="setup">🏠 Setup</button>
-            <button class="tab-btn" data-tab="monitor">📊 Monitor</button>
-            <button class="tab-btn" data-tab="analytics">📈 Analytics</button>
-            <button class="tab-btn" data-tab="logs">📝 Logs</button>
+            <button class="tab-btn" data-tab="analytics">📈 Analytics & Logs</button>
         </div>
 
         <!-- Tab: Setup -->
@@ -86,45 +84,54 @@
             </div>
         </div>
 
-        <!-- Tab: Monitor -->
-        <div class="tab-content" id="tab-monitor">
-            <div class="card">
-                <h2>📊 Real-Time Monitoring</h2>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="stat-probes">0</div>
-                        <div class="stat-label">Total Probes</div>
+        <!-- Tab: Analytics & Logs -->
+        <div class="tab-content" id="tab-analytics">
+            <div class="grid">
+                <div class="card">
+                    <h2>📊 Statistics</h2>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-probes">0</div>
+                            <div class="stat-label">Total Probes</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-avg-rtt">-</div>
+                            <div class="stat-label">Avg RTT (ms)</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-foreground">0</div>
+                            <div class="stat-label">Foreground</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-screen-on">0</div>
+                            <div class="stat-label">Screen On</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-screen-off">0</div>
+                            <div class="stat-label">Screen Off</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-offline">0</div>
+                            <div class="stat-label">Offline</div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="stat-avg-rtt">-</div>
-                        <div class="stat-label">Avg RTT (ms)</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="stat-foreground">0</div>
-                        <div class="stat-label">Foreground</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="stat-screen-on">0</div>
-                        <div class="stat-label">Screen On</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="stat-screen-off">0</div>
-                        <div class="stat-label">Screen Off</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="stat-offline">0</div>
-                        <div class="stat-label">Offline</div>
+                    <button class="btn btn-secondary" id="clear-btn" style="margin-top:20px;">
+                        <span>🗑️</span> Clear Data
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h2>📝 System Logs</h2>
+                    <div class="log-container" id="log-container">
+                        <div class="log-entry">
+                            <span class="log-time">--:--:--</span>
+                            <span>Waiting to start...</span>
+                        </div>
                     </div>
                 </div>
-                <button class="btn btn-secondary" id="clear-btn" style="margin-top:20px;">
-                    <span>🗑️</span> Clear Data
-                </button>
             </div>
-        </div>
 
-        <!-- Tab: Analytics -->
-        <div class="tab-content" id="tab-analytics">
-            <div class="card">
+            <div class="card" style="margin-top: 20px;">
                 <h2>📈 RTT Timeline</h2>
                 <div class="chart-container">
                     <canvas id="rtt-chart"></canvas>
@@ -134,19 +141,6 @@
             <div class="card" style="margin-top: 20px;" id="device-profile-card" style="display:none;">
                 <h2>🔍 Device Profile</h2>
                 <div id="device-profile-content"></div>
-            </div>
-        </div>
-
-        <!-- Tab: Logs -->
-        <div class="tab-content" id="tab-logs">
-            <div class="card">
-                <h2>📝 System Logs</h2>
-                <div class="log-container" id="log-container">
-                    <div class="log-entry">
-                        <span class="log-time">--:--:--</span>
-                        <span>Waiting to start...</span>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
