@@ -53,6 +53,9 @@
                                 <p><strong>Phone:</strong> <span id="user-phone">-</span></p>
                                 <p><strong>Name:</strong> <span id="user-name">-</span></p>
                             </div>
+                            <button class="btn btn-danger" id="logout-btn" style="margin-top:12px;">
+                                <span>🚪</span> Logout
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -241,14 +244,21 @@
         });
 
         // Socket event handlers
+        let isConnected = false;
+        
         socket.on('qr', (qrData) => {
-            document.getElementById('qr-container').style.display = 'block';
-            document.getElementById('user-info').style.display = 'none';
-            const canvas = document.getElementById('qrcode');
-            QRCode.toCanvas(canvas, qrData, { width: 256 });
+            // Only show QR if not already connected
+            if (!isConnected) {
+                document.getElementById('qr-container').style.display = 'block';
+                document.getElementById('user-info').style.display = 'none';
+                const canvas = document.getElementById('qrcode');
+                QRCode.toCanvas(canvas, qrData, { width: 256 });
+                addLog('QR code generated - scan with WhatsApp');
+            }
         });
 
         socket.on('connected', (user) => {
+            isConnected = true;
             document.getElementById('conn-badge').textContent = 'Connected';
             document.getElementById('conn-badge').className = 'status-badge status-connected';
             document.getElementById('qr-container').style.display = 'none';
@@ -262,6 +272,8 @@
         socket.on('disconnected', () => {
             document.getElementById('conn-badge').textContent = 'Disconnected';
             document.getElementById('conn-badge').className = 'status-badge status-disconnected';
+            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('qr-container').style.display = 'none';
             document.getElementById('start-btn').disabled = true;
             document.getElementById('stop-btn').disabled = true;
             addLog('WhatsApp disconnected');
@@ -349,6 +361,13 @@
             }
         });
 
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to logout? You will need to scan QR code again.')) {
+                socket.emit('logout');
+                addLog('Logging out...');
+            }
+        });
+
         function updateChart(data) {
             const probeNum = rttChart.data.datasets.reduce((sum, d) => sum + d.data.length, 0) + 1;
             const point = { x: probeNum, y: data.rtt_ms || 10000 };
@@ -378,6 +397,7 @@
             }
         }
 
+        // Initialize - check connection status on load
         socket.emit('get-status');
     </script>
 </body>

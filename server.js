@@ -113,6 +113,17 @@ io.on('connection', (socket) => {
         rttAnalyzer.clear();
         io.emit('log', 'All results cleared');
     });
+    
+    // Logout
+    socket.on('logout', async () => {
+        try {
+            await whatsappConnector.logout();
+            io.emit('log', 'Logged out successfully');
+            io.emit('disconnected');
+        } catch (error) {
+            socket.emit('log', `Logout error: ${error.message}`);
+        }
+    });
 });
 
 // Start server

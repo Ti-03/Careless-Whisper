@@ -4,6 +4,8 @@
  */
 
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const fs = require('fs');
+const path = require('path');
 
 class WhatsAppConnector {
     constructor() {
@@ -135,6 +137,37 @@ class WhatsAppConnector {
      */
     onMessageUpdate(callback) {
         this.onMessageUpdateCallback = callback;
+    }
+
+    /**
+     * Logout and clear authentication
+     */
+    async logout() {
+        try {
+            // Close the socket connection
+            if (this.sock) {
+                await this.sock.logout();
+                this.sock = null;
+            }
+            
+            // Delete auth_info folder
+            const authPath = path.join(__dirname, '..', '..', 'auth_info');
+            if (fs.existsSync(authPath)) {
+                fs.rmSync(authPath, { recursive: true, force: true });
+                console.log('Auth folder deleted');
+            }
+            
+            // Reconnect to show QR code
+            setTimeout(() => {
+                this.connect();
+            }, 1000);
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Still try to reconnect even if logout fails
+            setTimeout(() => {
+                this.connect();
+            }, 1000);
+        }
     }
 }
 
