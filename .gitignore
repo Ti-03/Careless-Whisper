@@ -2,6 +2,7 @@ node_modules/
 auth_info/
 *.log
 *.json
-*.md
+*.md 
+!README.md
 private/
 .gitignore
