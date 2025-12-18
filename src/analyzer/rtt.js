@@ -211,11 +211,11 @@ class RTTAnalyzer {
         }, {});
         
         return {
-            total: this.measurements.length,
-            avgRtt: validRtts.length > 0 ? Math.round(validRtts.reduce((sum, m) => sum + m.rtt_ms, 0) / validRtts.length) : null,
-            minRtt: validRtts.length > 0 ? Math.min(...validRtts.map(m => m.rtt_ms)) : null,
-            maxRtt: validRtts.length > 0 ? Math.max(...validRtts.map(m => m.rtt_ms)) : null,
-            statusCounts: statusCounts
+            total_measurements: this.measurements.length,
+            avg_rtt: validRtts.length > 0 ? Math.round(validRtts.reduce((sum, m) => sum + m.rtt_ms, 0) / validRtts.length) : null,
+            min_rtt: validRtts.length > 0 ? Math.min(...validRtts.map(m => m.rtt_ms)) : null,
+            max_rtt: validRtts.length > 0 ? Math.max(...validRtts.map(m => m.rtt_ms)) : null,
+            status_counts: statusCounts
         };
     }
 
