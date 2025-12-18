@@ -4,3 +4,5 @@ auth_info/
 *.json
 *.md
 private/
+.gitignore
+.env

@@ -4,347 +4,143 @@
     <title>Careless-Whisper - RTT Surveillance</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Courier New', 'Consolas', monospace;
-            background: #0a0e27;
-            background-image: 
-                radial-gradient(circle at 20% 50%, rgba(0, 255, 0, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.03) 0%, transparent 50%);
-            color: #00ff00;
-            min-height: 100vh;
-            padding: 10px;
-            position: relative;
-            overflow-x: hidden;
-        }
-        @media (min-width: 768px) {
-            body { padding: 20px; }
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 255, 0, 0.03) 0px,
-                transparent 1px,
-                transparent 2px,
-                rgba(0, 255, 0, 0.03) 3px
-            );
-            pointer-events: none;
-            z-index: 1;
-        }
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 2;
-        }
-        .header {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 2px solid #00ff00;
-            margin-bottom: 30px;
-            background: rgba(0, 0, 0, 0.6);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-        }
-        .header h1 {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
-            letter-spacing: 2px;
-            animation: glitch 3s infinite;
-        }
-        @media (min-width: 768px) {
-            .header h1 { font-size: 2.5em; letter-spacing: 3px; }
-        }
-        @keyframes glitch {
-            0%, 100% { text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
-            50% { text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; }
-        }
-        .header p {
-            font-size: 0.75em;
-            color: #00ffff;
-            text-shadow: 0 0 5px #00ffff;
-        }
-        @media (min-width: 768px) {
-            .header p { font-size: 1em; }
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        @media (min-width: 768px) {
-            .grid {
-                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-                gap: 20px;
-                margin-bottom: 20px;
-            }
-        }
-        .card {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 0;
-            padding: 15px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-            border: 1px solid #00ff00;
-            position: relative;
-        }
-        @media (min-width: 768px) {
-            .card { padding: 20px; }
-        }
-        .card::before {
-            content: '[';
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #00ff00;
-            font-size: 1.2em;
-        }
-        .card::after {
-            content: ']';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: #00ff00;
-            font-size: 1.2em;
-        }
-        .card h2 {
-            font-size: 0.95em;
-            margin-bottom: 12px;
-            color: #00ffff;
-            text-shadow: 0 0 5px #00ffff;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        @media (min-width: 768px) {
-            .card h2 { font-size: 1.2em; margin-bottom: 15px; letter-spacing: 2px; }
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 0;
-            font-size: 0.85em;
-            font-weight: bold;
-            border: 1px solid;
-            text-transform: uppercase;
-        }
-        .status-connected { 
-            background: rgba(0, 255, 0, 0.2); 
-            color: #00ff00;
-            border-color: #00ff00;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-        }
-        .status-disconnected { 
-            background: rgba(255, 0, 0, 0.2); 
-            color: #ff0000;
-            border-color: #ff0000;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-        }
-        .qr-container {
-            text-align: center;
-            padding: 20px;
-        }
-        #qrcode {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin: 10px 0;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #00ff00;
-            text-transform: uppercase;
-            font-size: 0.9em;
-            letter-spacing: 1px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #00ff00;
-            border-radius: 0;
-            background: rgba(0, 0, 0, 0.5);
-            color: #00ff00;
-            font-size: 1em;
-            font-family: 'Courier New', monospace;
-            box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.2);
-        }
-        .form-group input:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5), inset 0 0 5px rgba(0, 255, 0, 0.3);
-        }
-        .form-group input::placeholder {
-            color: rgba(0, 255, 0, 0.3);
-        }
-        .btn {
-            padding: 14px 20px;
-            border: 2px solid;
-            border-radius: 0;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            font-family: 'Courier New', monospace;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-primary {
-            background: rgba(0, 255, 0, 0.1);
-            color: #00ff00;
-            border-color: #00ff00;
-        }
-        .btn-primary:hover { 
-            background: rgba(0, 255, 0, 0.3);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-        }
-        .btn-danger {
-            background: rgba(255, 0, 0, 0.1);
-            color: #ff0000;
-            border-color: #ff0000;
-        }
-        .btn-danger:hover { 
-            background: rgba(255, 0, 0, 0.3);
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
-        }
-        .btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .stat-box {
-            background: rgba(0, 255, 0, 0.05);
-            padding: 10px;
-            border-radius: 0;
-            text-align: center;
-            border: 1px solid #00ff00;
-        }
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #00ffff;
-            text-shadow: 0 0 10px #00ffff;
-        }
-        .stat-label {
-            font-size: 0.7em;
-            color: #00ff00;
-            text-transform: uppercase;
-        }
-        .log-container {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 0;
-            padding: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.7em;
-            border: 1px solid #00ff00;
-        }
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
-            color: #00ff00;
-        }
-        .log-time {
-            color: #00ffff;
-            margin-right: 10px;
-        }
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-top: 10px;
-        }
-        .device-info {
-            background: rgba(0, 255, 0, 0.05);
-            padding: 10px;
-            border-radius: 0;
-            margin-bottom: 10px;
-            border: 1px solid #00ff00;
-        }
-        .device-info p {
-            margin: 6px 0;
-            display: flex;
-            justify-content: space-between;
-            color: #00ff00;
-            font-size: 0.85em;
-        }
-        .device-info strong {
-            color: #00ffff;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>[ Careless-Whisper ]</h1>
-            <p>&gt; NEVER LOOK BACK &lt;</p>
+            <h1>Careless Whisper</h1>
+            <p>RTT Surveillance & Device Monitoring Tool</p>
         </div>
 
-        <div class="grid">
-            <div class="card">
-                <h2>📱 [CONN_STATUS]</h2>
-                <div id="connection-status">
-                    <p>Status: <span class="status-badge status-disconnected" id="conn-badge">Disconnected</span></p>
-                    <div class="qr-container" id="qr-container" style="display:none;">
-                        <p style="color:#00ffff;">SCAN TO AUTHENTICATE:</p>
-                        <canvas id="qrcode"></canvas>
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="setup">🏠 Setup</button>
+            <button class="tab-btn" data-tab="monitor">📊 Monitor</button>
+            <button class="tab-btn" data-tab="analytics">📈 Analytics</button>
+            <button class="tab-btn" data-tab="logs">📝 Logs</button>
+        </div>
+
+        <!-- Tab: Setup -->
+        <div class="tab-content active" id="tab-setup">
+            <div class="grid">
+                <div class="card">
+                    <h2>📱 Platform Connection</h2>
+                    
+                    <!-- Platform Selector -->
+                    <div class="platform-selector">
+                        <div class="platform-option selected" data-platform="whatsapp">
+                            <div class="icon">💬</div>
+                            <div class="name">WhatsApp</div>
+                            <div class="status">Available</div>
+                        </div>
+                        <div class="platform-option disabled" data-platform="signal">
+                            <div class="icon">🔐</div>
+                            <div class="name">Signal</div>
+                            <div class="status">Coming Soon</div>
+                        </div>
                     </div>
-                    <div id="user-info" style="display:none;">
-                        <div class="device-info">
-                            <p><strong>Phone:</strong> <span id="user-phone">-</span></p>
-                            <p><strong>Name:</strong> <span id="user-name">-</span></p>
+
+                    <div id="connection-status">
+                        <p style="margin-bottom: 12px;">Status: <span class="status-badge status-disconnected" id="conn-badge">Disconnected</span></p>
+                        <div class="qr-container" id="qr-container" style="display:none;">
+                            <p style="color:#667eea;margin-bottom:12px;font-weight:600;">Scan QR Code to Connect</p>
+                            <canvas id="qrcode"></canvas>
+                        </div>
+                        <div id="user-info" style="display:none;">
+                            <div class="device-info">
+                                <p><strong>Phone:</strong> <span id="user-phone">-</span></p>
+                                <p><strong>Name:</strong> <span id="user-name">-</span></p>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="card">
+                    <h2>⚙️ Configuration</h2>
+                    <div class="form-group">
+                        <label>Target Phone Number</label>
+                        <input type="tel" id="target-number" placeholder="962XXXXXXXXX" />
+                        <div class="form-help">Enter in international format without + or 00</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (minutes)</label>
+                        <input type="number" id="duration" value="10" min="1" max="120" />
+                        <div class="form-help">How long to monitor the target</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Probe Interval (seconds)</label>
+                        <input type="number" id="interval" value="15" min="0.5" max="60" step="0.5" />
+                        <div class="form-help warning">⚠️ Values below 5s increase ban risk</div>
+                    </div>
+                    <button class="btn btn-primary" id="start-btn" disabled>
+                        <span>▶</span> Start Monitoring
+                    </button>
+                    <button class="btn btn-danger" id="stop-btn" disabled style="margin-top:12px;">
+                        <span>⏹</span> Stop Monitoring
+                    </button>
+                </div>
             </div>
+        </div>
 
+        <!-- Tab: Monitor -->
+        <div class="tab-content" id="tab-monitor">
             <div class="card">
-                <h2>⚙️ ATTACK CONFIG</h2>
-                <div class="form-group">
-                    <label>TARGET JID</label>
-                    <input type="tel" id="target-number" placeholder="962XXXXXXXXX" />
+                <h2>📊 Real-Time Monitoring</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-probes">0</div>
+                        <div class="stat-label">Total Probes</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-avg-rtt">-</div>
+                        <div class="stat-label">Avg RTT (ms)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-foreground">0</div>
+                        <div class="stat-label">Foreground</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-screen-on">0</div>
+                        <div class="stat-label">Screen On</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-screen-off">0</div>
+                        <div class="stat-label">Screen Off</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-offline">0</div>
+                        <div class="stat-label">Offline</div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>DURATION (minutes)</label>
-                    <input type="number" id="duration" value="10" min="1" max="120" />
-                </div>
-                <div class="form-group">
-                    <label>Probe Interval (seconds)</label>
-                    <input type="number" id="interval" value="15" min="0.5" max="60" step="0.5" />
-                    <p style="font-size:0.8em;opacity:0.7;margin-top:5px;">⚠️ Warning: &lt;5s = High ban risk!</p>
-                </div>
-                <button class="btn btn-primary" id="start-btn" disabled>[ INITIATE ATTACK ]</button>
-                <button class="btn btn-danger" id="stop-btn" disabled style="margin-top:10px;">[ TERMINATE ]</button>
-                <button class="btn" id="clear-btn" style="margin-top:10px;background:rgba(255,255,0,0.1);color:#ffff00;border-color:#ffff00;">[ CLEAR DATA ]</button>
+                <button class="btn btn-secondary" id="clear-btn" style="margin-top:20px;">
+                    <span>🗑️</span> Clear Data
+                </button>
             </div>
+        </div>
 
-
-
-
-
+        <!-- Tab: Analytics -->
+        <div class="tab-content" id="tab-analytics">
             <div class="card">
-                <h2>📝 [SYSTEM_LOG]</h2>
+                <h2>📈 RTT Timeline</h2>
+                <div class="chart-container">
+                    <canvas id="rtt-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-top: 20px;" id="device-profile-card" style="display:none;">
+                <h2>🔍 Device Profile</h2>
+                <div id="device-profile-content"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Logs -->
+        <div class="tab-content" id="tab-logs">
+            <div class="card">
+                <h2>📝 System Logs</h2>
                 <div class="log-container" id="log-container">
                     <div class="log-entry">
                         <span class="log-time">--:--:--</span>
@@ -353,47 +149,76 @@
                 </div>
             </div>
         </div>
-
-        <div class="card">
-            <h2>📈 [RTT_TIMELINE]</h2>
-            <div class="chart-container">
-                <canvas id="rtt-chart"></canvas>
-            </div>
-        </div>
     </div>
 
     <script>
         const socket = io();
         let rttChart;
+        let selectedPlatform = 'whatsapp';
+        let statsData = {
+            probes: 0,
+            avgRtt: 0,
+            foreground: 0,
+            screenOn: 0,
+            screenOff: 0,
+            offline: 0
+        };
 
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update content
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`tab-${tabName}`).classList.add('active');
+            });
+        });
+
+        // Platform selection
+        document.querySelectorAll('.platform-option').forEach(option => {
+            option.addEventListener('click', () => {
+                if (option.classList.contains('disabled')) return;
+                
+                document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedPlatform = option.dataset.platform;
+            });
+        });
+
+        // Initialize Chart
         const ctx = document.getElementById('rtt-chart').getContext('2d');
         rttChart = new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: [{
-                    label: 'APP_FOREGROUND',
+                    label: 'App Foreground',
                     data: [],
-                    backgroundColor: '#00ff00',
-                    borderColor: '#00ff00',
-                    pointRadius: 6
+                    backgroundColor: '#10b981',
+                    borderColor: '#10b981',
+                    pointRadius: 5
                 }, {
-                    label: 'SCREEN_ON',
+                    label: 'Screen On',
                     data: [],
-                    backgroundColor: '#ffff00',
-                    borderColor: '#ffff00',
-                    pointRadius: 6
+                    backgroundColor: '#f59e0b',
+                    borderColor: '#f59e0b',
+                    pointRadius: 5
                 }, {
-                    label: 'SCREEN_OFF',
+                    label: 'Screen Off',
                     data: [],
-                    backgroundColor: '#ff0000',
-                    borderColor: '#ff0000',
-                    pointRadius: 6
+                    backgroundColor: '#ef4444',
+                    borderColor: '#ef4444',
+                    pointRadius: 5
                 }, {
-                    label: 'OFFLINE',
+                    label: 'Offline',
                     data: [],
-                    backgroundColor: '#666666',
-                    borderColor: '#666666',
-                    pointRadius: 6
+                    backgroundColor: '#6b7280',
+                    borderColor: '#6b7280',
+                    pointRadius: 5
                 }]
             },
             options: {
@@ -402,25 +227,26 @@
                 scales: {
                     y: { 
                         beginAtZero: true,
-                        title: { display: true, text: 'RTT (ms)', color: '#00ff00' },
-                        ticks: { color: '#00ff00' },
-                        grid: { color: 'rgba(0, 255, 0, 0.2)' }
+                        title: { display: true, text: 'RTT (ms)', color: '#495057' },
+                        ticks: { color: '#495057' },
+                        grid: { color: '#e8eef5' }
                     },
                     x: { 
                         type: 'linear',
-                        title: { display: true, text: 'Probe #', color: '#00ff00' },
-                        ticks: { color: '#00ff00' },
-                        grid: { color: 'rgba(0, 255, 0, 0.2)' }
+                        title: { display: true, text: 'Probe #', color: '#495057' },
+                        ticks: { color: '#495057' },
+                        grid: { color: '#e8eef5' }
                     }
                 },
                 plugins: {
                     legend: { 
-                        labels: { color: '#00ff00', font: { family: 'Courier New', size: 12 } } 
+                        labels: { color: '#495057', font: { size: 12, weight: 600 } } 
                     }
                 }
             }
         });
 
+        // Socket event handlers
         socket.on('qr', (qrData) => {
             document.getElementById('qr-container').style.display = 'block';
             document.getElementById('user-info').style.display = 'none';
@@ -454,11 +280,37 @@
         });
 
         socket.on('stats', (stats) => {
-            // Stats event handler (UI removed)
+            // Update stats display
+            statsData.probes = stats.total_measurements || 0;
+            statsData.avgRtt = stats.avg_rtt ? Math.round(stats.avg_rtt) : 0;
+            statsData.foreground = stats.status_counts?.APP_FOREGROUND || 0;
+            statsData.screenOn = stats.status_counts?.SCREEN_ON || 0;
+            statsData.screenOff = stats.status_counts?.SCREEN_OFF || 0;
+            statsData.offline = stats.status_counts?.OFFLINE || 0;
+            
+            document.getElementById('stat-probes').textContent = statsData.probes;
+            document.getElementById('stat-avg-rtt').textContent = statsData.avgRtt || '-';
+            document.getElementById('stat-foreground').textContent = statsData.foreground;
+            document.getElementById('stat-screen-on').textContent = statsData.screenOn;
+            document.getElementById('stat-screen-off').textContent = statsData.screenOff;
+            document.getElementById('stat-offline').textContent = statsData.offline;
         });
 
         socket.on('device-profile', (profile) => {
-            // Device profile event handler (UI removed)
+            const card = document.getElementById('device-profile-card');
+            const content = document.getElementById('device-profile-content');
+            
+            if (profile) {
+                card.style.display = 'block';
+                content.innerHTML = `
+                    <div class="device-info">
+                        <p><strong>Device Type:</strong> <span>${profile.device_type || 'Unknown'}</span></p>
+                        <p><strong>Brand:</strong> <span>${profile.brand || 'Unknown'}</span></p>
+                        <p><strong>RTT Variance:</strong> <span>${profile.rtt_variance ? Math.round(profile.rtt_variance) + 'ms' : '-'}</span></p>
+                        <p><strong>Confidence:</strong> <span>${profile.confidence ? Math.round(profile.confidence * 100) + '%' : '-'}</span></p>
+                    </div>
+                `;
+            }
         });
 
         socket.on('log', (message) => {
@@ -485,11 +337,21 @@
         });
 
         document.getElementById('clear-btn').addEventListener('click', () => {
-            if (confirm('Clear all results?')) {
+            if (confirm('Clear all monitoring data?')) {
                 socket.emit('clear-results');
                 rttChart.data.datasets.forEach(d => d.data = []);
                 rttChart.update();
-                addLog('Results cleared');
+                
+                // Reset stats
+                statsData = { probes: 0, avgRtt: 0, foreground: 0, screenOn: 0, screenOff: 0, offline: 0 };
+                document.getElementById('stat-probes').textContent = '0';
+                document.getElementById('stat-avg-rtt').textContent = '-';
+                document.getElementById('stat-foreground').textContent = '0';
+                document.getElementById('stat-screen-on').textContent = '0';
+                document.getElementById('stat-screen-off').textContent = '0';
+                document.getElementById('stat-offline').textContent = '0';
+                
+                addLog('All data cleared');
             }
         });
 
