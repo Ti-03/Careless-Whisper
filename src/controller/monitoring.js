@@ -68,6 +68,7 @@ class MonitoringController {
             probeData.deviceModel = this.config.deviceModel || 'Unknown';
             
             this.analyzer.registerProbe(probeData.messageId, probeData);
+            console.log('Probe sent, message ID:', probeData.messageId);
             
             onProbe?.(probeData);
         } catch (error) {

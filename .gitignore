@@ -6,3 +6,5 @@ auth_info/
 !README.md
 private/
 .gitignore
+!package-lock.json
+!package.json
