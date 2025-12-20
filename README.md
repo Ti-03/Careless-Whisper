@@ -340,17 +340,6 @@ Contains:
    API      & Charts      Export
 ```
 
----
-
-### Probe Interval Recommendations
-
-| Interval | Risk Level | Use Case |
-|----------|-----------|----------|
-| 0.5-2s | EXTREME | Never use (instant ban) |
-| 3-5s | HIGH | Research only, temporary |
-| 10-15s | MEDIUM | Short-term monitoring |
-| 20-30s | LOW | Recommended for production |
-| 60s+ | SAFE | Long-term surveillance |
 
 ---
 
