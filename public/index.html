@@ -1,429 +1,615 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Careless-Whisper - RTT Surveillance</title>
+    <title>CW Monitor | Cyber Intelligence</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Careless Whisper</h1>
-            <p>RTT Surveillance & Device Monitoring Tool</p>
-        </div>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="brand">
+                <span class="material-icons-round brand-icon">radar</span>
+                <div>
+                    <h1>Careless Whisper</h1>
+                    <span class="brand-badge">RTT Surveillance</span>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="btn-text header-btn" id="logout-btn" title="Disconnect">
+                    <span class="material-icons-round" style="font-size:16px;">logout</span>
+                </button>
+                <div class="connection-status" id="conn-status">
+                    <div class="status-dot"></div>
+                    <span id="conn-text">Disconnected</span>
+                </div>
+            </div>
+        </header>
 
-        <!-- Tab Navigation -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="setup">🏠 Setup</button>
-            <button class="tab-btn" data-tab="analytics">📈 Analytics & Logs</button>
-        </div>
+        <!-- Main Dashboard -->
+        <main class="dashboard-grid">
+            <!-- Sidebar / Control Panel -->
+            <aside class="side-panel">
 
-        <!-- Tab: Setup -->
-        <div class="tab-content active" id="tab-setup">
-            <div class="grid">
-                <div class="card">
-                    <h2>📱 Platform Connection</h2>
-                    
-                    <!-- Platform Selector -->
-                    <div class="platform-selector">
-                        <div class="platform-option selected" data-platform="whatsapp">
-                            <div class="icon">💬</div>
-                            <div class="name">WhatsApp</div>
-                            <div class="status">Available</div>
-                        </div>
-                        <div class="platform-option disabled" data-platform="signal">
-                            <div class="icon">🔐</div>
-                            <div class="name">Signal</div>
-                            <div class="status">Coming Soon</div>
-                        </div>
-                    </div>
 
-                    <div id="connection-status">
-                        <p style="margin-bottom: 12px;">Status: <span class="status-badge status-disconnected" id="conn-badge">Disconnected</span></p>
-                        <div class="qr-container" id="qr-container" style="display:none;">
-                            <p style="color:#667eea;margin-bottom:12px;font-weight:600;">Scan QR Code to Connect</p>
-                            <canvas id="qrcode"></canvas>
+                <!-- Control Group: Target & Duration -->
+                <div class="control-card">
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom: 8px;">
+                        <div class="input-wrapper" style="flex:1;">
+                            <span class="material-icons-round input-icon">call</span>
+                            <input type="tel" id="target-number" placeholder="Target" autocomplete="off"
+                                style="font-size:0.8rem;" />
                         </div>
-                        <div id="user-info" style="display:none;">
-                            <div class="device-info">
-                                <p><strong>Phone:</strong> <span id="user-phone">-</span></p>
-                                <p><strong>Name:</strong> <span id="user-name">-</span></p>
-                            </div>
-                            <button class="btn btn-danger" id="logout-btn" style="margin-top:12px;">
-                                <span>🚪</span> Logout
+                        <!-- Mini Platform Selector -->
+                        <div class="mini-plat-selector" style="display:flex; gap:4px;">
+                            <button class="plat-mini-btn active" title="WhatsApp">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="16"
+                                    height="16" alt="WA">
+                            </button>
+                            <button class="plat-mini-btn" disabled title="Signal (Coming Soon)">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8d/Signal-Logo.svg"
+                                    width="16" height="16" style="filter:grayscale(1); opacity:0.5;" alt="Signal">
                             </button>
                         </div>
                     </div>
+
+                    <div class="duration-selector compact">
+                        <button class="duration-btn active" data-val="5">5m</button>
+                        <button class="duration-btn" data-val="10">10m</button>
+                        <button class="duration-btn" data-val="60" disabled>
+                            1h <span class="material-icons-round lock-icon">lock</span>
+                        </button>
+                        <button class="duration-btn" data-val="9999" disabled>
+                            ∞ <span class="material-icons-round lock-icon">lock</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h2>⚙️ Configuration</h2>
-                    <div class="form-group">
-                        <label>Target Phone Number</label>
-                        <input type="tel" id="target-number" placeholder="+962 XX XXX XXXX or 962XXXXXXXXX" />
-                        <div class="form-help">Enter in any format - will be auto-cleaned</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Duration (minutes)</label>
-                        <input type="number" id="duration" value="10" min="1" max="120" />
-                        <div class="form-help">How long to monitor the target</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Probe Interval (seconds)</label>
-                        <input type="number" id="interval" value="15" min="0.5" max="60" step="0.5" />
-                        <div class="form-help warning">⚠️ Values below 5s increase ban risk</div>
-                    </div>
+                <!-- Actions -->
+                <div class="action-buttons compact">
                     <button class="btn btn-primary" id="start-btn" disabled>
-                        <span>▶</span> Start Monitoring
+                        <span class="material-icons-round">play_arrow</span> INITIATE
                     </button>
-                    <button class="btn btn-danger" id="stop-btn" disabled style="margin-top:12px;">
-                        <span>⏹</span> Stop Monitoring
+                    <button class="btn btn-danger" id="stop-btn" disabled>
+                        <span class="material-icons-round">stop</span> END
                     </button>
                 </div>
-            </div>
-        </div>
 
-        <!-- Tab: Analytics & Logs -->
-        <div class="tab-content" id="tab-analytics">
-            <div class="grid">
-                <div class="card">
-                    <h2>📊 Statistics</h2>
-                    <div class="stats-grid">
-                        <div class="stat-box">
-                            <div class="stat-value" id="stat-probes">0</div>
-                            <div class="stat-label">Total Probes</div>
+
+
+                <!-- Session Stats (Moved from Footer) -->
+                <div class="panel-section stats-mini-grid">
+                    <div class="stat-mini-item">
+                        <span class="label">AVG RTT</span>
+                        <span class="val text-accent" id="stat-avg-rtt">-</span>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="label">Base</span>
+                        <span class="val" id="stat-baseline">-</span>
+                    </div>
+                    <div class="stat-mini-item full-width">
+                        <div style="display:flex; justify-content:space-between; width:100%;">
+                            <span class="text-success" id="stat-foreground" title="Foreground">0</span>
+                            <span class="text-warning" id="stat-screen-on" title="Screen On">0</span>
+                            <span class="text-danger" id="stat-offline" title="Offline">0</span>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="stat-avg-rtt">-</div>
-                            <div class="stat-label">Avg RTT (ms)</div>
+                        <span class="label" style="text-align:center; width:100%;">FG / ON / OFF</span>
+                    </div>
+                    <button id="clear-data-btn" class="btn-text" style="font-size:0.7rem; margin-top:8px;">
+                        CLEAR DATA
+                    </button>
+                </div>
+
+                <!-- Current Interval Analysis -->
+                <div class="panel-section" id="interval-panel"
+                    style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+                    <div
+                        style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">
+                        Current Interval</div>
+                    <div id="interval-content">
+                        <!-- Big Status Display -->
+                        <div style="text-align:center; padding: 12px 0;">
+                            <div id="int-status-big"
+                                style="font-size:1.5rem; font-weight:800; color:var(--text-secondary); margin-bottom:4px;">
+                                Waiting...</div>
+                            <div style="font-size:0.8rem; color:var(--text-secondary);" id="int-detail">--</div>
                         </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="stat-foreground">0</div>
-                            <div class="stat-label">Foreground</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="stat-screen-on">0</div>
-                            <div class="stat-label">Screen On</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="stat-screen-off">0</div>
-                            <div class="stat-label">Screen Off</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="stat-offline">0</div>
-                            <div class="stat-label">Offline</div>
+
+                        <!-- Threshold Bar -->
+                        <div id="int-warning"
+                            style="font-size:0.75rem; color:var(--warning); text-align:center; margin-top:8px; display:none; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
+                            ⚠ <span id="cal-progress-text">Calibrating... (0/15 samples)</span>
                         </div>
                     </div>
-                    <button class="btn btn-secondary" id="clear-btn" style="margin-top:20px;">
-                        <span>🗑️</span> Clear Data
-                    </button>
                 </div>
+            </aside>
 
-                <div class="card">
-                    <h2>📝 System Logs</h2>
-                    <div class="log-container" id="log-container">
-                        <div class="log-entry">
-                            <span class="log-time">--:--:--</span>
-                            <span>Waiting to start...</span>
-                        </div>
+            <!-- Main Chart Area -->
+            <section class="chart-card">
+                <div class="chart-header">
+                    <div class="live-indicator">
+                        <div class="pulse"></div>
+                        LIVE RTT SENSOR
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                        PROBES: <span id="stat-probes" style="color:var(--text-primary); font-weight:700;">0</span>
+                        <span style="margin-left:12px; cursor:pointer;"
+                            onclick="document.getElementById('info-dialog').showModal()" title="View Info">
+                            <span class="material-icons-round"
+                                style="font-size:16px; vertical-align:text-bottom;">info</span>
+                        </span>
                     </div>
                 </div>
-            </div>
-
-            <div class="card" style="margin-top: 20px;">
-                <h2>📈 RTT Timeline</h2>
-                <div class="chart-container">
+                <!-- Current Value Big Display -->
+                <!-- Current Value Big Display -->
+                <div class="current-value-card">
+                    <div class="value-display" id="current-rtt-display">--</div>
+                    <div class="label-display">Current RTT</div>
+                    <div id="calibration-badge" class="cal-badge">
+                        ⚠ Calibrating...
+                    </div>
+                </div>
+                <div class="chart-wrapper">
                     <canvas id="rtt-chart"></canvas>
                 </div>
-            </div>
-            
-            <div class="card" style="margin-top: 20px;" id="device-profile-card" style="display:none;">
-                <h2>🔍 Device Profile</h2>
-                <div id="device-profile-content"></div>
+            </section>
+        </main>
+
+        <!-- Bottom Stats Removed -->
+    </div>
+
+    <!-- Floating Logs Panel -->
+    <div class="logs-panel" id="logs-panel">
+        <div class="logs-header">
+            <span>SYSTEM LOGS</span>
+            <span class="material-icons-round" style="font-size:14px; cursor:pointer;"
+                onclick="document.getElementById('logs-panel').classList.toggle('minimized')">expand_more</span>
+        </div>
+        <div class="logs-content" id="log-container">
+            <!-- Logs injected here -->
+            <div class="log-line">
+                <span class="time">--:--:--</span>
+                <span class="msg">System initialized. Waiting for input...</span>
             </div>
         </div>
     </div>
 
+    <!-- QR Login Dialog -->
+    <dialog id="qr-dialog">
+        <div class="modal-content">
+            <h3 class="modal-title">Authentication Required</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem;">Scan the QR code with WhatsApp to connect the
+                surveillance platform.</p>
+            <div class="qr-canvas">
+                <canvas id="qrcode-canvas"></canvas>
+            </div>
+            <p style="font-size:0.8rem; color:var(--accent);">Waiting for scan...</p>
+        </div>
+    </dialog>
+
+    <!-- Info Dialog -->
+    <dialog id="info-dialog" onclick="event.target===this && this.close()">
+        <div class="modal-content" style="text-align:left; max-width:500px;">
+            <h3 class="modal-title">System Information</h3>
+
+            <div style="margin-bottom:16px; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px;">
+                <strong style="color:var(--warning)">⚠ Configuration Note</strong>
+                <p style="font-size:0.9rem; margin-top:4px; color:var(--text-secondary);">Testing was more accurate when
+                    targeting Apple phones compared to Android devices due to consistent background processing behavior.
+                </p>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <strong style="color:var(--accent)">Calibration Benchmarks</strong>
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">(!) Calibration may take
+                    time to stabilize.</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:0.85rem;">
+                    <div style="padding:8px; background:rgba(16, 185, 129, 0.1); color:#10b981; border-radius:4px;">
+                        <div>Foreground</div>
+                        <strong>600 - 800ms</strong>
+                    </div>
+                    <div style="padding:8px; background:rgba(245, 158, 11, 0.1); color:#f59e0b; border-radius:4px;">
+                        <div>Screen On</div>
+                        <strong>1000 - 1500ms</strong>
+                    </div>
+                    <div style="padding:8px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border-radius:4px;">
+                        <div>Screen Off</div>
+                        <strong>1500 - 3000ms</strong>
+                    </div>
+                    <div style="padding:8px; background:rgba(113, 113, 122, 0.1); color:#a1a1aa; border-radius:4px;">
+                        <div>Offline</div>
+                        <strong>&gt; 3000ms</strong>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="this.closest('dialog').close()"
+                style="margin-top:16px;">Close</button>
+        </div>
+    </dialog>
+
     <script>
         const socket = io();
         let rttChart;
-        let selectedPlatform = 'whatsapp';
-        let statsData = {
-            probes: 0,
-            avgRtt: 0,
-            foreground: 0,
-            screenOn: 0,
-            screenOff: 0,
-            offline: 0
-        };
+        let selectedDuration = 5;
+        let probeCounter = 0;
 
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        // --- UI Interactions ---
+        // Duration Selector
+        document.querySelectorAll('.duration-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const tabName = btn.dataset.tab;
-                
-                // Update buttons
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                if (btn.disabled) return;
+                document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                
-                // Update content
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                document.getElementById(`tab-${tabName}`).classList.add('active');
+                selectedDuration = parseInt(btn.dataset.val);
             });
         });
 
-        // Platform selection
-        document.querySelectorAll('.platform-option').forEach(option => {
-            option.addEventListener('click', () => {
-                if (option.classList.contains('disabled')) return;
-                
-                document.querySelectorAll('.platform-option').forEach(o => o.classList.remove('selected'));
-                option.classList.add('selected');
-                selectedPlatform = option.dataset.platform;
-            });
+        // Phone Input formatter
+        const phoneInput = document.getElementById('target-number');
+        phoneInput.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/[^0-9+]/g, '');
+            e.target.value = val;
         });
 
-        // Initialize Chart
+        // Clear Data
+        document.getElementById('clear-data-btn').addEventListener('click', () => {
+            if (confirm('Clear all visual data?')) {
+                resetData();
+            }
+        });
+
+        // --- Chart.js Setup ---
         const ctx = document.getElementById('rtt-chart').getContext('2d');
+        Chart.defaults.color = '#71717a';
+        Chart.defaults.font.family = "'JetBrains Mono', monospace";
+
         rttChart = new Chart(ctx, {
-            type: 'scatter',
+            type: 'line',
             data: {
                 datasets: [{
-                    label: 'App Foreground',
+                    label: 'RTT (ms)',
                     data: [],
-                    backgroundColor: '#10b981',
-                    borderColor: '#10b981',
-                    pointRadius: 5
-                }, {
-                    label: 'Screen On',
-                    data: [],
-                    backgroundColor: '#f59e0b',
-                    borderColor: '#f59e0b',
-                    pointRadius: 5
-                }, {
-                    label: 'Screen Off',
-                    data: [],
-                    backgroundColor: '#ef4444',
-                    borderColor: '#ef4444',
-                    pointRadius: 5
-                }, {
-                    label: 'Offline',
-                    data: [],
-                    backgroundColor: '#6b7280',
-                    borderColor: '#6b7280',
-                    pointRadius: 5
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    pointHoverRadius: 6,
+                    tension: 0.1, /* Shark fin style */
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        title: { display: true, text: 'RTT (ms)', color: '#495057' },
-                        ticks: { color: '#495057' },
-                        grid: { color: '#e8eef5' }
-                    },
-                    x: { 
-                        type: 'linear',
-                        title: { display: true, text: 'Probe #', color: '#495057' },
-                        ticks: { color: '#495057' },
-                        grid: { color: '#e8eef5' }
-                    }
+                animation: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
                 plugins: {
-                    legend: { 
-                        labels: { color: '#495057', font: { size: 12, weight: 600 } } 
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(24, 24, 27, 0.9)',
+                        titleColor: '#f4f4f5',
+                        bodyColor: '#a1a1aa',
+                        borderColor: '#27272a',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                    },
+                    annotation: {
+                        annotations: {} // Filled dynamically
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false, // Hide X axis labels for cleaner look
+                        type: 'linear',  // Explicit linear type
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#27272a',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: { size: 10 }
+                        }
                     }
                 }
             }
         });
 
-        // Socket event handlers
-        let isConnected = false;
-        
+        // --- Socket Logic ---
+        const qrDialog = document.getElementById('qr-dialog');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+
         socket.on('qr', (qrData) => {
-            // Only show QR if not already connected
-            if (!isConnected) {
-                document.getElementById('qr-container').style.display = 'block';
-                document.getElementById('user-info').style.display = 'none';
-                const canvas = document.getElementById('qrcode');
-                QRCode.toCanvas(canvas, qrData, { width: 256 });
-                addLog('QR code generated - scan with WhatsApp');
-            }
+            if (!qrDialog.open) qrDialog.showModal();
+            const canvas = document.getElementById('qrcode-canvas');
+            QRCode.toCanvas(canvas, qrData, { width: 200, margin: 2 }, (error) => {
+                if (error) console.error(error);
+            });
         });
 
         socket.on('connected', (user) => {
-            isConnected = true;
-            document.getElementById('conn-badge').textContent = 'Connected';
-            document.getElementById('conn-badge').className = 'status-badge status-connected';
-            document.getElementById('qr-container').style.display = 'none';
-            document.getElementById('user-info').style.display = 'block';
-            document.getElementById('user-phone').textContent = user.id;
-            document.getElementById('user-name').textContent = user.name || 'N/A';
-            document.getElementById('start-btn').disabled = false;
-            addLog('WhatsApp connected successfully');
+            qrDialog.close();
+            updateConnectionStatus(true);
+            addLog(`Connected as ${user.id}`);
+            startBtn.disabled = false;
+        });
+
+        // Check connection status on page load
+        socket.on('connection-status', (status) => {
+            if (!status.isConnected) {
+                // Not connected, request QR code
+                socket.emit('request-qr');
+            }
         });
 
         socket.on('disconnected', () => {
-            document.getElementById('conn-badge').textContent = 'Disconnected';
-            document.getElementById('conn-badge').className = 'status-badge status-disconnected';
-            document.getElementById('user-info').style.display = 'none';
-            document.getElementById('qr-container').style.display = 'none';
-            document.getElementById('start-btn').disabled = true;
-            document.getElementById('stop-btn').disabled = true;
-            addLog('WhatsApp disconnected');
+            updateConnectionStatus(false);
+            addLog('Disconnected from WhatsApp');
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
         });
 
         socket.on('measurement', (data) => {
-            updateChart(data);
-            addLog(`RTT: ${data.rtt_ms}ms | Status: ${data.status}`);
-            socket.emit('get-stats');
+            const point = {
+                x: ++probeCounter,
+                y: data.rtt_ms
+            };
+
+            // Add point
+            const dataset = rttChart.data.datasets[0];
+            dataset.data.push(point);
+
+            // Keep last 100 points
+            if (dataset.data.length > 100) {
+                dataset.data.shift();
+            }
+
+            rttChart.update('none'); // 'none' for performance
+
+
+
+            // Update big display
+            const display = document.getElementById('current-rtt-display');
+            if (display) display.textContent = data.rtt_ms;
+
+            // Updated Interval Analysis Logic (Detailed)
+            const intStatusBig = document.getElementById('int-status-big');
+            const intDetail = document.getElementById('int-detail');
+            const intWarn = document.getElementById('int-warning');
+
+            // Determine Status & Color based on Fixed Ranges for now (as requested by user)
+            // Foreground: 600-800ms
+            // Screen On: 1000-1500ms
+            // Screen Off: 1500-3000ms
+            // Offline: > 3000ms
+
+            const rtt = data.rtt_ms;
+            let statusText = 'Unknown';
+            let statusColor = 'var(--text-secondary)';
+            let detailText = `${rtt}ms`;
+
+            if (rtt < 800) {
+                statusText = 'FOREGROUND';
+                statusColor = 'var(--success)';
+            } else if (rtt >= 800 && rtt < 1000) {
+                // Gap between user's definitions. Treat as screen on or high foreground
+                statusText = 'FOREGROUND';
+                statusColor = 'var(--success)';
+            } else if (rtt < 1500) {
+
+                statusText = 'SCREEN ON';
+                statusColor = 'var(--warning)';
+            } else if (rtt < 3000) {
+                statusText = 'SCREEN OFF';
+                statusColor = '#fca5a5'; // Light red
+            } else {
+                statusText = 'OFFLINE';
+                statusColor = 'var(--danger)';
+            }
+
+            if (intStatusBig) {
+                intStatusBig.textContent = statusText;
+                intStatusBig.style.color = statusColor;
+                intStatusBig.style.textShadow = `0 0 20px ${statusColor}`; // Glow effect
+            }
+            if (intDetail) {
+                intDetail.textContent = `${rtt}ms`;
+            }
+
+            // Check calibration warning
+            const calBadge = document.getElementById('calibration-badge');
+            if (intWarn) {
+                if (calBadge && calBadge.textContent.includes('Calibrating')) {
+                    intWarn.style.display = 'block';
+                    // Try to get progress from text content if possible, or just generic
+                    const progressText = document.getElementById('cal-progress-text');
+                    if (progressText) progressText.textContent = calBadge.textContent.replace('⚠ ', '');
+                } else {
+                    intWarn.style.display = 'none';
+                }
+            }
+
+            addLog(`RTT: ${data.rtt_ms}ms | ${data.status}`);
+            socket.emit('get-stats'); // Request stats update
         });
 
         socket.on('stats', (stats) => {
-            // Update stats display
-            statsData.probes = stats.total_measurements || 0;
-            statsData.avgRtt = stats.avg_rtt ? Math.round(stats.avg_rtt) : 0;
-            statsData.foreground = stats.status_counts?.APP_FOREGROUND || 0;
-            statsData.screenOn = stats.status_counts?.SCREEN_ON || 0;
-            statsData.screenOff = stats.status_counts?.SCREEN_OFF || 0;
-            statsData.offline = stats.status_counts?.OFFLINE || 0;
-            
-            document.getElementById('stat-probes').textContent = statsData.probes;
-            document.getElementById('stat-avg-rtt').textContent = statsData.avgRtt || '-';
-            document.getElementById('stat-foreground').textContent = statsData.foreground;
-            document.getElementById('stat-screen-on').textContent = statsData.screenOn;
-            document.getElementById('stat-screen-off').textContent = statsData.screenOff;
-            document.getElementById('stat-offline').textContent = statsData.offline;
+            document.getElementById('stat-probes').textContent = stats.total_measurements || 0;
+            document.getElementById('stat-avg-rtt').textContent = stats.avg_rtt ? Math.round(stats.avg_rtt) + 'ms' : '-';
+
+            // Count statuses
+            const counts = stats.status_counts || {};
+            document.getElementById('stat-foreground').textContent = counts['App Foreground'] || 0;
+            document.getElementById('stat-screen-on').textContent = counts['Screen On'] || 0;
+            document.getElementById('stat-offline').textContent = (counts['Offline'] || 0) + (counts['OFFLINE'] || 0);
+
+            if (stats.baseline_rtt) {
+                document.getElementById('stat-baseline').textContent = stats.baseline_rtt + 'ms';
+                updateChartZones(stats.threshold1_rtt, stats.threshold2_rtt, stats.threshold3_rtt);
+
+                // Update calibration badge
+                const calBadge = document.getElementById('calibration-badge');
+                calBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                calBadge.style.color = '#10b981';
+                calBadge.textContent = '✓ Calibrated';
+            }
         });
 
         socket.on('device-profile', (profile) => {
-            const card = document.getElementById('device-profile-card');
-            const content = document.getElementById('device-profile-content');
-            
             if (profile) {
-                card.style.display = 'block';
-                content.innerHTML = `
-                    <div class="device-info">
-                        <p><strong>Device Type:</strong> <span>${profile.device_type || 'Unknown'}</span></p>
-                        <p><strong>Brand:</strong> <span>${profile.brand || 'Unknown'}</span></p>
-                        <p><strong>RTT Variance:</strong> <span>${profile.rtt_variance ? Math.round(profile.rtt_variance) + 'ms' : '-'}</span></p>
-                        <p><strong>Confidence:</strong> <span>${profile.confidence ? Math.round(profile.confidence * 100) + '%' : '-'}</span></p>
-                    </div>
-                `;
+                document.getElementById('device-mini-info').style.display = 'block';
+                document.getElementById('info-device').textContent = (profile.brand || 'Unk') + ' ' + (profile.device_type || '');
+                document.getElementById('info-confidence').textContent = profile.confidence ? Math.round(profile.confidence * 100) + '%' : '-';
             }
         });
 
-        socket.on('log', (message) => {
-            addLog(message);
-        });
+        socket.on('log', (msg) => addLog(msg));
 
-        // Phone number input filter
-        const targetNumberInput = document.getElementById('target-number');
-        targetNumberInput.addEventListener('input', (e) => {
-            // Auto-format while typing (visual feedback only)
-            const cursorPos = e.target.selectionStart;
-            const oldValue = e.target.value;
-            const cleaned = oldValue.replace(/[^0-9+]/g, '');
-            
-            if (cleaned !== oldValue) {
-                e.target.value = cleaned;
-                // Adjust cursor position
-                const diff = oldValue.length - cleaned.length;
-                e.target.setSelectionRange(cursorPos - diff, cursorPos - diff);
+        // --- Controls ---
+        startBtn.addEventListener('click', () => {
+            const number = phoneInput.value.replace(/[^0-9]/g, '');
+            if (!number) {
+                alert('Please enter a valid number');
+                return;
             }
+
+            socket.emit('start-monitoring', {
+                targetNumber: number,
+                duration: selectedDuration,
+                interval: 3
+            });
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            addLog(`Initiating scan on ${number}...`);
         });
 
-        document.getElementById('start-btn').addEventListener('click', () => {
-            // Clean the phone number: remove +, spaces, dashes, parentheses, dots
-            let rawNumber = document.getElementById('target-number').value;
-            let cleanedNumber = rawNumber.replace(/[^0-9]/g, '');
-            
-            // Remove leading 00 if present
-            if (cleanedNumber.startsWith('00')) {
-                cleanedNumber = cleanedNumber.substring(2);
-            }
-            
-            const config = {
-                targetNumber: cleanedNumber,
-                deviceModel: 'Unknown',
-                duration: parseInt(document.getElementById('duration').value),
-                interval: parseFloat(document.getElementById('interval').value)
-            };
-            socket.emit('start-monitoring', config);
-            document.getElementById('start-btn').disabled = true;
-            document.getElementById('stop-btn').disabled = false;
-            addLog(`Starting attack on: ${cleanedNumber}`);
-        });
-
-        document.getElementById('stop-btn').addEventListener('click', () => {
+        stopBtn.addEventListener('click', () => {
             socket.emit('stop-monitoring');
-            document.getElementById('start-btn').disabled = false;
-            document.getElementById('stop-btn').disabled = true;
-        });
-
-        document.getElementById('clear-btn').addEventListener('click', () => {
-            if (confirm('Clear all monitoring data?')) {
-                socket.emit('clear-results');
-                rttChart.data.datasets.forEach(d => d.data = []);
-                rttChart.update();
-                
-                // Reset stats
-                statsData = { probes: 0, avgRtt: 0, foreground: 0, screenOn: 0, screenOff: 0, offline: 0 };
-                document.getElementById('stat-probes').textContent = '0';
-                document.getElementById('stat-avg-rtt').textContent = '-';
-                document.getElementById('stat-foreground').textContent = '0';
-                document.getElementById('stat-screen-on').textContent = '0';
-                document.getElementById('stat-screen-off').textContent = '0';
-                document.getElementById('stat-offline').textContent = '0';
-                
-                addLog('All data cleared');
-            }
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            addLog('Scan terminated by user');
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to logout? You will need to scan QR code again.')) {
+            if (confirm('Disconnect session?')) {
                 socket.emit('logout');
-                addLog('Logging out...');
             }
         });
 
-        function updateChart(data) {
-            const probeNum = rttChart.data.datasets.reduce((sum, d) => sum + d.data.length, 0) + 1;
-            const point = { x: probeNum, y: data.rtt_ms || 10000 };
-            
-            const idx = 
-                data.status === 'APP_FOREGROUND' ? 0 :
-                data.status === 'SCREEN_ON' ? 1 :
-                data.status === 'SCREEN_OFF' ? 2 : 3;
-            
-            rttChart.data.datasets[idx].data.push(point);
-            if (rttChart.data.datasets[idx].data.length > 50) {
-                rttChart.data.datasets[idx].data.shift();
+        // --- Helpers ---
+        function updateConnectionStatus(connected) {
+            const el = document.getElementById('conn-status');
+            const dot = el.querySelector('.status-dot');
+            const text = document.getElementById('conn-text');
+
+            if (connected) {
+                el.classList.add('status-connected');
+                text.textContent = 'System Online';
+                startBtn.disabled = false;
+            } else {
+                el.classList.remove('status-connected');
+                text.textContent = 'Disconnected';
+                startBtn.disabled = true;
             }
-            rttChart.update();
         }
 
-        function addLog(message) {
+        function addLog(msg) {
             const container = document.getElementById('log-container');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            const time = new Date().toLocaleTimeString();
-            entry.innerHTML = `<span class="log-time">${time}</span><span>${message}</span>`;
-            container.insertBefore(entry, container.firstChild);
-            
-            while (container.children.length > 50) {
-                container.removeChild(container.lastChild);
-            }
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            div.innerHTML = `<span class="time">[${time}]</span><span class="msg">${msg}</span>`;
+            container.prepend(div);
+
+            if (container.children.length > 50) container.lastChild.remove();
         }
 
-        // Initialize - check connection status on load
+        function resetData() {
+            rttChart.data.datasets[0].data = [];
+            rttChart.update();
+            socket.emit('clear-results');
+            document.getElementById('stat-probes').textContent = '0';
+        }
+
+        function updateChartZones(t1, t2, t3) {
+            if (!t1) return;
+
+            const annotations = {
+                zone1: {
+                    type: 'box',
+                    yMin: 0,
+                    yMax: t1,
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                    borderWidth: 0,
+                    label: {
+                        display: true,
+                        content: 'Foreground',
+                        position: 'start',
+                        color: 'rgba(16, 185, 129, 0.5)',
+                        font: { size: 10 },
+                        yAdjust: 10
+                    }
+                },
+                zone2: {
+                    type: 'box',
+                    yMin: t1,
+                    yMax: t2,
+                    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                    borderWidth: 0,
+                    label: {
+                        display: true,
+                        content: 'Screen On',
+                        position: 'start',
+                        color: 'rgba(245, 158, 11, 0.5)',
+                        font: { size: 10 },
+                        yAdjust: 0
+                    }
+                },
+                zone3: {
+                    type: 'box',
+                    yMin: t2,
+                    yMax: 10000, // Max
+                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                    borderWidth: 0,
+                    label: {
+                        display: true,
+                        content: 'Screen Off / Offline',
+                        position: 'start',
+                        color: 'rgba(239, 68, 68, 0.5)',
+                        font: { size: 10 },
+                        yAdjust: -10
+                    }
+                }
+            };
+            rttChart.options.plugins.annotation.annotations = annotations;
+            rttChart.update('none');
+        }
+
+        // Init - Request connection status immediately
         socket.emit('get-status');
+
+        // Also emit connection check for automatic QR popup
+        socket.emit('check-connection');
     </script>
 </body>
+
 </html>

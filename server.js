@@ -49,10 +49,12 @@ whatsappConnector.onDisconnected(() => {
 whatsappConnector.onMessageUpdate((updates) => {
     for (const update of updates) {
         if (update.update.status) {
-            const measurement = rttAnalyzer.handleReceipt(update.key.id, update.update.status);
+            // Pass the fromJid for multi-device tracking
+            const fromJid = update.key.remoteJid;
+            const measurement = rttAnalyzer.handleReceipt(update.key.id, update.update.status, fromJid);
             if (measurement) {
                 io.emit('measurement', measurement);
-                
+
                 // Send device profile every 5 measurements
                 if (rttAnalyzer.getMeasurements().length % 5 === 0) {
                     io.emit('device-profile', rttAnalyzer.getDeviceProfile());
@@ -62,17 +64,66 @@ whatsappConnector.onMessageUpdate((updates) => {
     }
 });
 
+// Handle raw receipts for Android inactive receipts (CRITICAL for Android detection)
+whatsappConnector.onRawReceipt((node) => {
+    const measurement = rttAnalyzer.handleRawReceipt(node);
+    if (measurement) {
+        io.emit('measurement', measurement);
+
+        // Send device profile every 5 measurements
+        if (rttAnalyzer.getMeasurements().length % 5 === 0) {
+            io.emit('device-profile', rttAnalyzer.getDeviceProfile());
+        }
+    }
+});
+
+whatsappConnector.onPresenceUpdate((update) => {
+    // Forward presence updates to analyzer
+    rttAnalyzer.handlePresence(update);
+    io.emit('presence-update', update);
+});
+
 // Socket.io event handlers
 io.on('connection', (socket) => {
     console.log('Client connected');
-    
+
     // Send current connection status
     socket.on('get-status', () => {
         if (whatsappConnector.isConnected()) {
             socket.emit('connected', whatsappConnector.getUserInfo());
         }
     });
-    
+
+    // Check connection and trigger QR if not connected
+    socket.on('check-connection', () => {
+        const isConnected = whatsappConnector.isConnected();
+        socket.emit('connection-status', { isConnected });
+        
+        // If not connected, send the QR if available
+        if (!isConnected) {
+            const lastQR = whatsappConnector.getLastQR();
+            if (lastQR) {
+                socket.emit('qr', lastQR);
+                socket.emit('log', 'Displaying QR code for authentication...');
+            } else {
+                socket.emit('log', 'Not authenticated. Waiting for QR code...');
+            }
+        }
+    });
+
+    // Request QR code explicitly
+    socket.on('request-qr', () => {
+        if (!whatsappConnector.isConnected()) {
+            const lastQR = whatsappConnector.getLastQR();
+            if (lastQR) {
+                socket.emit('qr', lastQR);
+                socket.emit('log', 'Displaying QR code for authentication...');
+            } else {
+                socket.emit('log', 'QR code not yet generated. Please wait...');
+            }
+        }
+    });
+
     // Start monitoring
     socket.on('start-monitoring', async (config) => {
         try {
@@ -93,7 +144,7 @@ io.on('connection', (socket) => {
             socket.emit('log', `Error: ${error.message}`);
         }
     });
-    
+
     // Stop monitoring
     socket.on('stop-monitoring', () => {
         monitoringController.stop();
@@ -101,19 +152,19 @@ io.on('connection', (socket) => {
         const filename = monitoringController.exportResults();
         io.emit('log', `Results exported to: ${filename}`);
     });
-    
+
     // Get statistics
     socket.on('get-stats', () => {
         const stats = rttAnalyzer.getStatistics();
         socket.emit('stats', stats);
     });
-    
+
     // Clear results
     socket.on('clear-results', () => {
         rttAnalyzer.clear();
         io.emit('log', 'All results cleared');
     });
-    
+
     // Logout
     socket.on('logout', async () => {
         try {
@@ -132,7 +183,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
     console.log(`\n🌐 Web Interface running at: http://localhost:${PORT}`);
     console.log('\n📱 Connecting to WhatsApp...\n');
-    
+
     try {
         await whatsappConnector.connect();
     } catch (error) {

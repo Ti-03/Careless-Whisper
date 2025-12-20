@@ -8,3 +8,4 @@ private/
 .gitignore
 !package-lock.json
 !package.json
+*.zip

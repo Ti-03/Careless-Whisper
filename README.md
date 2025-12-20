@@ -2,18 +2,29 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.0-blue.svg)
-![License](https://img.shields.io/badge/license-Educational-green.svg)
-![Platform](https://img.shields.io/badge/platform-Node.js-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-Active-success.svg)
+![Node.js](https://img.shields.io/badge/Node.js-16+-brightgreen.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)
+![React](https://img.shields.io/badge/React-18+-61DAFB.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**A sophisticated real-time surveillance tool leveraging WhatsApp RTT (Round-Trip Time) analysis to profile target device status and activity patterns**
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Research](#-research-background) • [Warning](#-ethical--legal-warning)
+**A phone number can reveal whether a device is active, in standby or offline (and more).** 
+
+
+[Features](#-features) • [Installation](#-installation)  • [Research](#-research-background) • [Warning](#-ethical--legal-warning)
 
 </div>
 
 ---
+
+---
+
+## ⚠️ DISCLAIMER
+
+**Proof-of-concept for educational and security research purposes only. Demonstrates privacy vulnerabilities in WhatsApp and Signal.**
+
+---
+
 
 ## 📋 Table of Contents
 
@@ -23,7 +34,6 @@
 - [Installation](#-installation)
 - [Usage Guide](#-usage-guide)
 - [Research Background](#-research-background)
-- [Troubleshooting](#-troubleshooting)
 - [Ethical & Legal Warning](#-ethical--legal-warning)
 
 ---

@@ -64,11 +64,12 @@ class MonitoringController {
      */
     async sendProbe(onProbe, onLog) {
         try {
-            const probeData = await this.connector.sendProbe(this.config.targetNumber);
+            // Use delete probe method (better for Android detection)
+            const probeData = await this.connector.sendDeleteProbe(this.config.targetNumber);
             probeData.deviceModel = this.config.deviceModel || 'Unknown';
             
             this.analyzer.registerProbe(probeData.messageId, probeData);
-            console.log('Probe sent, message ID:', probeData.messageId);
+            console.log('Probe sent (DELETE method), message ID:', probeData.messageId);
             
             onProbe?.(probeData);
         } catch (error) {
