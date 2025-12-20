@@ -56,7 +56,7 @@ The tool exploits timing side-channels in WhatsApp's message delivery mechanism 
 
 ## 📸 Interface
 
-![Careless Whisper Interface](screen1.jpg)
+![Careless Whisper Interface](public/screen1.jpg)
 
 ---
 
