@@ -342,21 +342,6 @@ Contains:
 
 ---
 
-## Configuration
-
-### RTT Thresholds (src/analyzer/rtt.js)
-
-Customize for your network conditions:
-
-```javascript
-const THRESHOLDS = {
-    APP_FOREGROUND: 900,     // ms
-    SCREEN_ON: 1600,         // ms
-    SCREEN_OFF: 3800,        // ms
-    NETWORK_BASELINE: 300    // Regional baseline latency
-};
-```
-
 ### Probe Interval Recommendations
 
 | Interval | Risk Level | Use Case |
