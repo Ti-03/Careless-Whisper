@@ -6,13 +6,13 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)
 ![React](https://img.shields.io/badge/React-18+-61DAFB.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-[![Test Demo](https://img.shields.io/badge/Test_Demo-Live-ff69b4.svg)](https://bit.ly/498Puzf)
+[![Test Demo](https://img.shields.io/badge/Test_Demo-Live-ff69b4.svg)](http://34.66.138.153:3000)
 
 
 **A phone number can reveal whether a device is active, in standby or offline (and more).** 
 
 
-[Features](#-features) • [Installation](#-installation)  • [Research](#-research-background) • [Test Demo](https://bit.ly/498Puzf) • [Warning](#-ethical--legal-warning)
+[Features](#features) • [Installation](#installation)  • [Research](#research-background) • [Test Demo](http://34.66.138.153:3000) • [Warning](#ethical--legal-warning)
 
 </div>
 
@@ -27,50 +27,50 @@
 ---
 
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Overview](#-overview)
-- [Features](#-features)
-- [How It Works](#-how-it-works)
-- [Installation](#-installation)
-- [Usage Guide](#-usage-guide)
-- [Research Background](#-research-background)
-- [Ethical & Legal Warning](#-ethical--legal-warning)
+- [Overview](#overview)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+- [Research Background](#research-background)
+- [Ethical & Legal Warning](#ethical--legal-warning)
 
 ---
 
-## 🎯 Overview
+## Overview
 
 **Careless Whisper** is an advanced surveillance tool that implements the attack methodology described in the research paper *"Careless Whisper: Leveraging Advances in Instant Messaging to Profile Users"*. 
 
 The tool exploits timing side-channels in WhatsApp's message delivery mechanism to infer sensitive information about target devices:
 
-- 📱 **App State Detection**: Determine if WhatsApp is in foreground or background
-- 🔆 **Screen Status**: Detect whether the device screen is on or off
-- 📊 **Device Fingerprinting**: Identify device brand (iPhone vs Android) through RTT pattern analysis
-- ⏱️ **Real-time Monitoring**: Track target activity with sub-second precision
-- 📈 **Visual Analytics**: Interactive charts and comprehensive statistics
-- 🔍 **Pattern Recognition**: Automatic classification based on RTT thresholds
+- **App State Detection**: Determine if WhatsApp is in foreground or background
+- **Screen Status**: Detect whether the device screen is on or off
+- **Device Fingerprinting**: Identify device brand (iPhone vs Android) through RTT pattern analysis
+- **Real-time Monitoring**: Track target activity with sub-second precision
+- **Visual Analytics**: Interactive charts and comprehensive statistics
+- **Pattern Recognition**: Automatic classification based on RTT thresholds
 
 ---
 
-## 📸 Interface
+## Interface
 
 ![Careless Whisper Interface](public/screen1.jpg)
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Capabilities
 
-#### 🎯 Real-Time RTT Monitoring
+#### Real-Time RTT Monitoring
 - Live dashboard with instant updates
 - Sub-second latency measurements
 - Automatic probe scheduling with configurable intervals
 - Silent probing without user notification
 
-#### 🔍 Status Classification
+#### Status Classification
 Intelligent classification based on calibrated thresholds:
 - **Foreground** (< 900ms): App actively in use
 - **Screen On** (< 1,600ms): Device awake, app in background  
@@ -79,7 +79,7 @@ Intelligent classification based on calibrated thresholds:
 
 ---
 
-## 🔬 How It Works
+## How It Works
 
 ### Attack Methodology
 
@@ -135,7 +135,7 @@ User Browser ←[Socket.IO]→ Express Server
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
@@ -186,7 +186,7 @@ Expected output:
 
 ---
 
-## 📖 Usage Guide
+## Usage Guide
 
 ### Quick Start
 
@@ -342,7 +342,7 @@ Contains:
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### RTT Thresholds (src/analyzer/rtt.js)
 
@@ -361,15 +361,15 @@ const THRESHOLDS = {
 
 | Interval | Risk Level | Use Case |
 |----------|-----------|----------|
-| 0.5-2s | 🔴 EXTREME | Never use (instant ban) |
-| 3-5s | 🟠 HIGH | Research only, temporary |
-| 10-15s | 🟡 MEDIUM | Short-term monitoring |
-| 20-30s | 🟢 LOW | Recommended for production |
-| 60s+ | ✅ SAFE | Long-term surveillance |
+| 0.5-2s | EXTREME | Never use (instant ban) |
+| 3-5s | HIGH | Research only, temporary |
+| 10-15s | MEDIUM | Short-term monitoring |
+| 20-30s | LOW | Recommended for production |
+| 60s+ | SAFE | Long-term surveillance |
 
 ---
 
-## 🔬 Research Background
+## Research Background
 
 ### Academic Paper
 
@@ -395,9 +395,9 @@ The paper demonstrates how instant messaging applications leak user activity inf
 
 ---
 
-## 🚨 Ethical & Legal Warning
+## Ethical & Legal Warning
 
-### ⚠️ EDUCATIONAL USE ONLY
+### EDUCATIONAL USE ONLY
 
 This tool is provided **strictly for educational and security research purposes**.
 
@@ -405,7 +405,7 @@ This tool is provided **strictly for educational and security research purposes*
 
 <div align="center">
 
-**🔒 Use Responsibly. Respect Privacy. Follow the Law. 🔒**
+**Use Responsibly. Respect Privacy. Follow the Law.**
 
 [⬆ Back to Top](#careless-whisper---whatsapp-rtt-surveillance-tool)
 
