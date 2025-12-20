@@ -3,9 +3,10 @@
  * Handles WhatsApp authentication, connection, and messaging
  */
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const fs = require('fs');
 const path = require('path');
+const qrcode = require('qrcode-terminal');
 
 class WhatsAppConnector {
     constructor() {
@@ -26,9 +27,19 @@ class WhatsAppConnector {
      */
     async connect() {
         const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+        
+        // Get latest Baileys version
+        const { version } = await fetchLatestBaileysVersion();
 
         this.sock = makeWASocket({
             auth: state,
+            version,
+            printQRInTerminal: false,
+            browser: ['Careless Whisper', 'Chrome', '10.0'],
+            connectTimeoutMs: 60000,
+            defaultQueryTimeoutMs: 60000,
+            keepAliveIntervalMs: 30000,
+            markOnlineOnConnect: false,
         });
 
         this.sock.ev.on('creds.update', saveCreds);
@@ -38,22 +49,34 @@ class WhatsAppConnector {
 
             if (qr) {
                 this.lastQR = qr; // Store the QR code
+                console.log('\n📱 QR CODE - Scan this with WhatsApp:\n');
+                qrcode.generate(qr, { small: true });
+                console.log('\n');
                 if (this.onQRCallback) {
                     this.onQRCallback(qr);
                 }
             }
 
             if (connection === 'close') {
+                const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+                const statusCode = lastDisconnect?.error?.output?.statusCode;
+                
+                console.log('Connection closed. Status:', statusCode);
+                
                 if (this.onDisconnectedCallback) {
                     this.onDisconnectedCallback();
                 }
 
-                // Exponential backoff: wait longer between retries
-                const retryDelay = Math.min(30000, 3000 * Math.pow(2, this.retryCount || 0));
-                this.retryCount = (this.retryCount || 0) + 1;
+                if (shouldReconnect) {
+                    // Exponential backoff: wait longer between retries
+                    const retryDelay = Math.min(30000, 3000 * Math.pow(2, this.retryCount || 0));
+                    this.retryCount = (this.retryCount || 0) + 1;
 
-                console.log(`Connection closed. Retrying in ${retryDelay / 1000}s... (attempt ${this.retryCount})`);
-                setTimeout(() => this.connect(), retryDelay);
+                    console.log(`Connection closed. Retrying in ${retryDelay / 1000}s... (attempt ${this.retryCount})`);
+                    setTimeout(() => this.connect(), retryDelay);
+                } else {
+                    console.log('Logged out. Not reconnecting automatically.');
+                }
             } else if (connection === 'open') {
                 this.retryCount = 0; // Reset on successful connection
                 this.lastQR = null; // Clear QR code on successful connection
