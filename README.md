@@ -12,7 +12,7 @@
 **A phone number can reveal whether a device is active, in standby or offline (and more).** 
 
 
-[Features](#features) • [Installation](#installation)  • [Research](#research-background) • [Test Demo](http://34.66.138.153:3000) • [Warning](#ethical--legal-warning)
+[Features](#features) • [Installation](#installation)  • [Research](#research-background) • [Test Demo](http://34.66.138.87:3000) • [Warning](#ethical--legal-warning)
 
 </div>
 
