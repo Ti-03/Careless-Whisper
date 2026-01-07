@@ -6,13 +6,12 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)
 ![React](https://img.shields.io/badge/React-18+-61DAFB.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-[![Test Demo](https://img.shields.io/badge/Test_Demo-Live-ff69b4.svg)](http://34.61.138.87:3000/)
 
 
 **A phone number can reveal whether a device is active, in standby or offline (and more).** 
 
 
-[Features](#features) • [Installation](#installation)  • [Research](#research-background) • [Test Demo](http://34.61.138.87:3000/) • [Warning](#ethical--legal-warning)
+[Features](#features) • [Installation](#installation)  • [Research](#research-background) • [Warning](#ethical--legal-warning)
 
 </div>
 
